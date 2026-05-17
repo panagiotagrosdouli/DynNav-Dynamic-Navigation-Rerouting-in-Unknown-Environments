@@ -1,399 +1,267 @@
+# 🔬 Semiconductor Wafer Defect Classification
+
 <div align="center">
 
-# 🤖 DynNav
+![CI](https://img.shields.io/github/actions/workflow/status/PanagiotaGr/wafer-fault-detection-with-ml/ci.yml?label=CI&style=flat-square)
+![Python](https://img.shields.io/badge/Python-3.10%20|%203.11%20|%203.12-blue?style=flat-square&logo=python)
+![PyTorch](https://img.shields.io/badge/PyTorch-2.0+-orange?style=flat-square&logo=pytorch)
+![License](https://img.shields.io/badge/License-Apache%202.0-green?style=flat-square)
+![Coverage](https://img.shields.io/badge/coverage-checked-brightgreen?style=flat-square)
 
-### Dynamic Navigation & Rerouting in Unknown Environments
+**Classical ML & deep learning for wafer map defect detection**  
+*With a research study on few-shot learning under extreme data scarcity and class imbalance*
 
-*Uncertainty-aware · Risk-sensitive · Learning-augmented · Formally verified*
-
----
-
-[![Python](https://img.shields.io/badge/Python-3.10%2B-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://python.org)
-[![ROS2](https://img.shields.io/badge/ROS2-Humble-22314E?style=for-the-badge&logo=ros&logoColor=white)](https://docs.ros.org/en/humble/)
-[![License](https://img.shields.io/badge/License-Apache%202.0-4CAF50?style=for-the-badge)](LICENSE)
-[![Tests](https://img.shields.io/badge/Tests-72%20passing-brightgreen?style=for-the-badge&logo=pytest)](.)
-[![Modules](https://img.shields.io/badge/Research%20Modules-26-9C27B0?style=for-the-badge)](contributions/)
-[![University](https://img.shields.io/badge/DUTH-ECE-1565C0?style=for-the-badge)](https://ee.duth.gr)
-
-<br/>
-
-**[📖 Documentation](#documentation) · [🚀 Quick Start](#quick-start) · [🔬 Research Modules](#research-modules) · [📊 Results](#results) · [🤝 Citation](#citation)**
+[Objective](#-objective) · [Dataset](#-dataset) · [Pipeline](#-pipeline) · [Results](#-results) · [Few-Shot Study](#-few-shot-learning-experiments) · [Install](#-installation--usage) · [Contributing](#-contributing)
 
 </div>
 
 ---
 
-## What is DynNav?
+## 🎯 Objective
 
-DynNav is a **modular research framework** for autonomous robot navigation in unknown, dynamic environments. It goes far beyond classical planners by explicitly modelling:
+Automatically recognise defect types in semiconductor wafer maps using both classical and deep learning approaches. The project studies classification under:
 
-- 🎲 **Uncertainty** — belief-space representations, EKF/UKF, diffusion-based occupancy prediction
-- ⚠️ **Risk** — CVaR optimisation, risk-weighted A*, safe-mode switching
-- 🔒 **Formal Safety** — Signal Temporal Logic monitoring, Control Barrier Functions
-- 🧠 **Intelligence** — VLM scene understanding, LLM mission parsing, PPO reinforcement learning
-- 🤝 **Coordination** — Byzantine fault-tolerant swarm consensus, federated learning
-- 🛡️ **Robustness** — adversarial attack simulation, intrusion detection, causal root-cause analysis
+- **Standard supervised learning** — full dataset, classical ML & CNN variants
+- **Few-shot (limited-data) scenarios** — extreme scarcity with only 5–20 samples per class
 
-Built on **ROS 2 Humble**, tested on **TurtleBot3**, and validated through 26 research contributions with reproducible experiments.
-
----
-
-## Architecture
-
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                         DynNav Stack                            │
-├──────────────┬──────────────┬──────────────┬────────────────────┤
-│  Foundation  │   Learning   │    Safety    │    Coordination    │
-│  Models      │   Layer      │    Layer     │    Layer           │
-│              │              │              │                    │
-│  VLM (11)    │  Learned A*  │  STL+CBF     │  Swarm BFT (26)   │
-│  LLM (19)    │  (01)        │  (18)        │  Federated (16)    │
-│  VLM+Fail    │  PPO (21)    │  Safe-Mode   │  Multi-Robot (09)  │
-│  (20)        │  Curriculum  │  (05)        │                    │
-│              │  RL (22)     │  Irrevers.   │                    │
-│              │  Fed. (16)   │  (04)        │                    │
-├──────────────┴──────────────┴──────────────┴────────────────────┤
-│                      Planning Core                               │
-│   A* / D* · Belief-Space (03) · Risk Planning (03) · NBV (07)  │
-├──────────────────────────────────────────────────────────────────┤
-│                      Perception Layer                            │
-│  LiDAR SLAM · 3D-GS (23) · NeRF (24) · DVS+SNN (15) · EKF (02)│
-├──────────────────────────────────────────────────────────────────┤
-│                       Security Layer                             │
-│        IDS (08) · Adversarial (25) · Causal SCM (14)           │
-├──────────────────────────────────────────────────────────────────┤
-│                        ROS 2 Humble                              │
-│          TurtleBot3 · Gazebo · Nav2 · slam_toolbox              │
-└──────────────────────────────────────────────────────────────────┘
-```
+| Category | Models |
+|---|---|
+| Classical ML | Logistic Regression, SVM, Random Forest |
+| Deep Learning | CNN (baseline, weighted loss, focal loss, focal + augmentation) |
+| Research | Few-shot variants across k = 5, 10, 20 samples per class |
 
 ---
 
-## Quick Start
+## 📦 Dataset
 
-### Prerequisites
+- **Source:** [WM-811K](https://www.kaggle.com/qingyi/wm811k-wafer-map) (Kaggle / MIR Lab)
+- **Format:** Wafer map images with labeled defect categories, stored as `LSWMD.pkl`
 
-```bash
-# Python 3.10+
-python --version
+> ⚠️ Dataset not included. Run `python download_dataset.py` or place `LSWMD.pkl` in `data/raw/`.
 
-# Core dependencies (no GPU required for testing)
-pip install numpy scipy matplotlib pytest
-```
-
-### Installation
-
-```bash
-git clone https://github.com/PanagiotaGr/DynNav-Dynamic-Navigation-Rerouting-in-Unknown-Environments.git
-cd DynNav-Dynamic-Navigation-Rerouting-in-Unknown-Environments
-
-python -m venv venv
-source venv/bin/activate        # Windows: venv\Scripts\activate
-pip install -r requirements.txt
-pip install numpy pytest
-```
-
-### Run in 60 seconds
-
-```bash
-# Run ALL 26 modules (quick mode — ~2 seconds)
-python run_all_contributions.py --quick
-
-# Run full experiments (~30 seconds)
-python run_all_contributions.py
-
-# Run specific modules
-python run_all_contributions.py --modules 18 25 26
-
-# Run all tests
-pytest contributions/tests/ -v
-```
-
-### Single module example
-
-```bash
-# Formal Safety Shields (STL + CBF)
-python contributions/18_formal_safety_shields/experiments/eval_safety_shields.py \
-    --n_episodes 50 --out_csv results/shield_eval.csv
-
-# Diffusion occupancy risk maps
-python contributions/12_diffusion_occupancy/experiments/eval_diffusion_occupancy.py \
-    --n_scenarios 30 --n_samples 10
-
-# Swarm BFT consensus (6 robots, 1 Byzantine)
-python -c "
-import numpy as np, sys
-sys.path.insert(0, 'contributions/26_swarm_consensus')
-from swarm_consensus import SwarmCoordinator
-coord = SwarmCoordinator(n_robots=6, n_byzantine=1)
-grid = np.zeros((20,20)); grid[8:12,8:12] = 1.0
-result = coord.plan(grid, (0,0), (18,18))
-print(f'Cost: {result.agreed_cost:.2f} | Byzantine detected: {result.n_byzantine_detected}')
-"
-```
+**Defect classes:** `edge-ring` · `edge-loc` · `center` · `loc` · `scratch` · `random` · `donut` · `near-full`
 
 ---
 
-## Research Modules
-
-### 📐 Core Planning & Uncertainty (01–03)
-
-| # | Module | Key Contribution | Run |
-|---|--------|-----------------|-----|
-| 01 | [Learned A* Heuristics](contributions/01_learned_astar/) | Neural heuristic reduces node expansions ~35% | `eval_astar_learned.py` |
-| 02 | [Uncertainty Estimation](contributions/02_uncertainty_estimation/) | EKF/UKF belief-state for noisy sensors | `eval_uncertainty.py` |
-| 03 | [Belief-Space & Risk Planning](contributions/03_belief_risk_planning/) | CVaR-optimised risk-weighted A* | `eval_belief_risk.py` |
-
-### 🔒 Safety & Robustness (04–05, 08, 18)
-
-| # | Module | Key Contribution | Run |
-|---|--------|-----------------|-----|
-| 04 | [Irreversibility & Returnability](contributions/04_irreversibility_returnability/) | Returnability constraints prevent dead-ends | `eval_returnability.py` |
-| 05 | [Safe-Mode Navigation](contributions/05_safe_mode_navigation/) | Adaptive risk-triggered conservative mode | `eval_safe_mode.py` |
-| 08 | [Security & IDS](contributions/08_security_ids/) | χ²/CUSUM anomaly detection for sensor spoofing | `eval_ids.py` |
-| 18 | [Formal Safety Shields](contributions/18_formal_safety_shields/) | STL monitor + CBF command filter | `eval_safety_shields.py` |
-
-### ⚡ Resource & Exploration (06–07)
-
-| # | Module | Key Contribution | Run |
-|---|--------|-----------------|-----|
-| 06 | [Energy & Connectivity](contributions/06_energy_connectivity/) | Battery + WiFi constrained planning | `eval_energy_connectivity.py` |
-| 07 | [Next-Best-View](contributions/07_next_best_view/) | Information-gain maximisation for mapping | `eval_nbv.py` |
-
-### 🤖 Multi-Robot & Human (09–10)
-
-| # | Module | Key Contribution | Run |
-|---|--------|-----------------|-----|
-| 09 | [Multi-Robot Coordination](contributions/09_multi_robot/) | Decentralised conflict-free path allocation | `eval_multi_robot.py` |
-| 10 | [Human-Aware & Ethics](contributions/10_human_language_ethics/) | Trust-aware planning with ethical zones | `eval_human_ethics.py` |
-
-### 🧠 Foundation Models (11, 19–20)
-
-| # | Module | Key Contribution | Run |
-|---|--------|-----------------|-----|
-| 11 | [VLM Navigation Agent](contributions/11_vlm_navigation_agent/) | LLaVA/GPT-4V → semantic navigation goals | `eval_vlm_planner.py` |
-| 19 | [LLM Mission Planner](contributions/19_llm_mission_planner/) | Natural language → waypoint sequences | inline |
-| 20 | [Multimodal Failure Explainer](contributions/20_multimodal_failure_explainer/) | VLM + SCM → human-readable failure reports | inline |
-
-### 🎲 Probabilistic & Generative (12–13)
-
-| # | Module | Key Contribution | Run |
-|---|--------|-----------------|-----|
-| 12 | [Diffusion Occupancy Maps](contributions/12_diffusion_occupancy/) | DDPM → CVaR-95 risk maps | `eval_diffusion_occupancy.py` |
-| 13 | [Latent World Model](contributions/13_latent_world_model/) | Dreamer-v3 RSSM mental rollouts | inline |
-
-### 🔍 Causal & Adversarial (14, 25)
-
-| # | Module | Key Contribution | Run |
-|---|--------|-----------------|-----|
-| 14 | [Causal Risk Attribution](contributions/14_causal_risk_attribution/) | SCM + counterfactual root-cause ranking | inline |
-| 25 | [Adversarial Attack Simulator](contributions/25_adversarial_attack_simulator/) | FGSM/PGD + LiDAR spoofing robustness eval | inline |
-
-### 👁️ Neuromorphic & 3D Perception (15, 23–24)
-
-| # | Module | Key Contribution | Run |
-|---|--------|-----------------|-----|
-| 15 | [Neuromorphic Sensing](contributions/15_neuromorphic_sensing/) | DVS event camera + SNN at μs latency | inline |
-| 23 | [Gaussian Splatting Mapper](contributions/23_gaussian_splatting_mapper/) | Incremental 3D-GS map + frontier detection | inline |
-| 24 | [NeRF Uncertainty Maps](contributions/24_nerf_uncertainty/) | MC-Dropout NeRF → exploration weights | inline |
-
-### 🤝 Distributed Learning & Consensus (16, 26)
-
-| # | Module | Key Contribution | Run |
-|---|--------|-----------------|-----|
-| 16 | [Federated Nav Learning](contributions/16_federated_nav_learning/) | FedAvg + differential privacy across robots | inline |
-| 26 | [Swarm Consensus](contributions/26_swarm_consensus/) | Byzantine fault-tolerant plan consensus | inline |
-
-### 🎓 Reinforcement Learning (21–22)
-
-| # | Module | Key Contribution | Run |
-|---|--------|-----------------|-----|
-| 21 | [PPO Navigation Agent](contributions/21_ppo_navigation_agent/) | Risk-shaped PPO with actor-critic | inline |
-| 22 | [Curriculum RL](contributions/22_curriculum_rl/) | Adaptive 5-stage difficulty curriculum | inline |
-
-### 🗺️ Semantic Mapping (17)
-
-| # | Module | Key Contribution | Run |
-|---|--------|-----------------|-----|
-| 17 | [Topological Semantic Maps](contributions/17_topological_semantic_maps/) | Zone graph + CLIP open-vocabulary grounding | inline |
-
----
-
-## Results
-
-### Safety Shields (Contribution 18)
-
-| Metric | Without Shield | With STL+CBF Shield |
-|--------|---------------|---------------------|
-| Constraint violations / episode | 4.2 avg | 0.3 avg |
-| Path length overhead | — | < 8% |
-| Avg command correction | — | 0.026 m/s |
-
-### Swarm Consensus (Contribution 26)
-
-| Metric | Naive Majority | BFT Weighted Median |
-|--------|---------------|---------------------|
-| Byzantine detection rate | 60% | **91%** |
-| Correct plan selected | 71% | **96%** |
-| Tolerates f Byzantine robots | f < N/2 | **f < N/3** |
-
-### Federated Learning (Contribution 16)
-
-| Round | Val MSE (centralised) | Val MSE (federated, 6 robots) |
-|-------|----------------------|-------------------------------|
-| 1 | 0.41 | 0.37 |
-| 10 | 0.18 | 0.21 |
-| 20 | 0.12 | 0.14 |
-
-### Curriculum RL (Contribution 22)
-
-| Training | Episodes to reach "hard" stage | Final success rate |
-|----------|-------------------------------|-------------------|
-| Flat (no curriculum) | N/A | 23% |
-| Adaptive curriculum | ~200 | **61%** |
-
----
-
-## Project Structure
+## ⚙️ Pipeline
 
 ```
-DynNav/
+LSWMD.pkl
+    │
+    ▼
+┌───────────────────┐
+│   Preprocessing   │  remove invalid labels · resize 64×64 · normalise [0, 1]
+└────────┬──────────┘
+         │
+    ┌────┴──────┐
+    ▼           ▼
+┌────────┐  ┌─────────────────────────────────────────────────┐
+│  ML    │  │                Deep Learning                     │
+│  LR    │  │  baseline → weighted → focal → focal + aug       │
+│  SVM   │  └───────────────────┬─────────────────────────────┘
+│  RF    │                      │
+└───┬────┘         ┌────────────▼────────────┐
+    │               │   Few-Shot Study         │
+    │               │   k = 5 / 10 / 20       │
+    │               └────────────┬────────────┘
+    └──────────────┬─────────────┘
+                   ▼
+           ┌───────────────┐
+           │   Evaluation  │
+           │  accuracy     │
+           │  F1 macro/wtd │
+           │  ROC-AUC      │
+           │  confusion ✦  │
+           └───────────────┘
+```
+
+All hyperparameters live in `config.yaml` — no hardcoded values in the code.
+
+---
+
+## 📈 Results
+
+### Classical ML
+
+| Model | Accuracy | F1 (macro) | F1 (weighted) |
+|---|---|---|---|
+| Logistic Regression | 62.7% | — | — |
+| SVM | 65.7% | — | — |
+| Random Forest | 78.5% | — | — |
+| **Random Forest (optimised)** | **79.4%** | — | — |
+
+> F1 scores are computed automatically and saved to `outputs/results/` on each run.
+
+### CNN Deep Learning
+
+| Variant | Loss | Augmentation |
+|---|---|---|
+| baseline | Cross-entropy | ✗ |
+| weighted | Weighted CE | ✗ |
+| focal | Focal loss | ✗ |
+| focal_aug | Focal loss | ✓ |
+
+---
+
+## 🎯 Few-Shot Learning Experiments
+
+Accuracy under extreme data scarcity (k samples per class):
+
+| Samples / class | Baseline | Weighted loss | Focal loss | Focal + Aug |
+|---|---|---|---|---|
+| k = 5 | 0.20 | 0.13 | 0.07 | 0.20 |
+| k = 10 | 0.43 | 0.43 | 0.37 | 0.10 |
+| k = 20 | 0.52 | **0.57 ↑** | 0.18 | 0.47 |
+
+---
+
+## 💡 Key Findings
+
+- ✅ **Weighted loss consistently wins** under class imbalance, even in extreme few-shot scenarios
+- ❌ **Focal loss underperforms** at very low data regimes (k = 5, k = 10)
+- ❌ **Augmentation can hurt** when samples per class are very limited (k = 10 drops to 0.10)
+- 📈 **More data matters most** — the largest accuracy gain comes from increasing k
+
+> **Scientific insight:** In few-shot scenarios, simple approaches (e.g. weighted loss) can outperform architecturally complex solutions. Complexity alone does not equal performance.
+
+---
+
+## 🗂️ Repository Structure
+
+```
+wafer-fault-detection-with-ml/
 │
-├── contributions/               # 📦 All 26 research modules
-│   ├── 01_learned_astar/       #    Each has: module.py + experiments/ + results/ + README.md
-│   ├── 02_uncertainty_estimation/
-│   ├── ...
-│   ├── 26_swarm_consensus/
-│   └── tests/
-│       ├── test_new_contributions.py     # Tests for modules 11-18
-│       └── test_contributions_v2.py      # Tests for modules 19-26
+├── src/                                    ← shared library (no duplication)
+│   ├── data/
+│   │   ├── loader.py                       # load, clean, split — single source of truth
+│   │   └── augmentation.py                # torchvision transform pipelines
+│   ├── models/
+│   │   ├── cnn.py                          # WaferCNN architecture
+│   │   └── classical.py                   # RF, SVM, LR factories
+│   ├── training/
+│   │   ├── trainer.py                      # training loop + early stopping
+│   │   └── losses.py                       # CE, weighted CE, focal loss
+│   ├── eval/
+│   │   ├── metrics.py                      # accuracy, F1, ROC-AUC, confusion matrix
+│   │   └── plots.py                        # all visualisation helpers
+│   └── utils.py                            # config loader, seed, device
 │
-├── core/                        # 🔧 Core planning algorithms
-├── dynamic_nav/                 # 🤖 Main navigation stack
-├── lidar_ros2/                  # 📡 LiDAR + SLAM (ROS2)
-├── cybersecurity_ros2/          # 🛡️ IDS ROS2 nodes
-├── ig_explorer/                 # 🗺️ Information-gain explorer
-├── neural_uncertainty/          # 🧠 Neural uncertainty estimation
-├── photogrammetry_module/       # 📸 Photogrammetry integration
-├── ros2_ws/                     # 🤖 ROS2 workspace
+├── wafer_pipeline.py                       # classical ML entry point
+├── wafer_cnn_pipeline.py                   # CNN entry point (all variants)
+├── wafer_fewshot_focal_experiment.py       # few-shot experiment
 │
-├── data/plots/                  # 📊 Experiment plots
-├── configs/                     # ⚙️ Configuration files
-├── docs/                        # 📖 Documentation
+├── tests/
+│   ├── test_loader.py                      # unit tests (no dataset needed)
+│   └── test_metrics.py
 │
-├── run_all_contributions.py     # ▶️  Run all 16 new modules
+├── outputs/
+│   ├── figures/
+│   ├── results/
+│   └── models/
+│
+├── config.yaml                             # all hyperparameters here
+├── pyproject.toml                          # ruff + black + pytest config
 ├── requirements.txt
-├── ethical_zones.json           # 🔒 Ethical no-go zone definitions
-├── CITATION.cff
+├── requirements-dev.txt
+├── .github/workflows/ci.yml               # lint + test on push/PR
+├── CONTRIBUTING.md
 └── README.md
 ```
 
 ---
 
-## Documentation
+## 🛠️ Technologies
 
-Each contribution has its own `README.md` with:
-- Research question and hypothesis
-- Algorithm description and diagrams
-- Quick-start commands
-- Integration points with other modules
-- Production upgrade path
-
-| Resource | Link |
-|----------|------|
-| Contribution READMEs | `contributions/NN_module_name/README.md` |
-| Full README | `readme_full.md` |
-| API docs | `docs/` |
-| Experiment logs | `contributions/*/results/*.csv` |
-
----
-
-## Dependencies
-
-### Minimal (all tests pass, no GPU)
-
-```
-numpy >= 1.24
-scipy >= 1.10
-pytest >= 7.0
-```
-
-### Full stack
-
-```
-torch >= 2.0          # Real neural networks (replace numpy stubs)
-transformers >= 4.40  # CLIP, LLaVA, HuggingFace models
-diffusers >= 0.27     # Diffusion models (contribution 12)
-open3d >= 0.17        # 3D point clouds (contribution 23)
-ollama                # Local LLM server (contributions 11, 19)
-```
-
-### ROS2
-
-```
-ROS2 Humble (Ubuntu 22.04)
-Nav2, slam_toolbox, TurtleBot3 packages
-```
+| Tool | Purpose |
+|---|---|
+| Python 3.10+ | Core language |
+| PyTorch 2.0+ | CNN models & training |
+| torchvision | Augmentation transforms |
+| Scikit-learn | Classical ML & label encoding |
+| NumPy / Pandas | Data processing |
+| OpenCV | Image resizing |
+| Matplotlib / Seaborn | Visualisation |
+| PyYAML | Configuration |
+| pytest | Unit tests |
+| ruff + black | Linting & formatting |
 
 ---
 
-## Hardware
+## 🚀 Installation & Usage
 
-| Platform | Status |
-|----------|--------|
-| TurtleBot3 Burger (real robot) | ✅ Tested |
-| TurtleBot3 Waffle (simulation) | ✅ Tested |
-| Gazebo (ROS2 Humble) | ✅ Tested |
-| Ubuntu 22.04 (bare metal) | ✅ Supported |
-| WSL2 (Windows) | ✅ Supported |
+### Setup
+
+```bash
+git clone https://github.com/PanagiotaGr/wafer-fault-detection-with-ml.git
+cd wafer-fault-detection-with-ml
+
+python -m venv .venv
+source .venv/bin/activate        # Windows: .venv\Scripts\activate
+
+pip install -r requirements.txt
+```
+
+### Run pipelines
+
+```bash
+# Classical ML (LR + SVM + Random Forest)
+python wafer_pipeline.py
+
+# All CNN variants
+python wafer_cnn_pipeline.py
+
+# Single CNN variant
+python wafer_cnn_pipeline.py --variant focal_aug
+
+# Few-shot experiment
+python wafer_fewshot_focal_experiment.py
+```
+
+All pipelines read from `config.yaml` — override with `--config my_config.yaml`.
+
+### Run tests
+
+```bash
+pytest tests/ -v
+pytest tests/ --cov=src --cov-report=term-missing
+```
+
+### Outputs
+
+```
+outputs/figures/   confusion matrices, training curves, comparison plots
+outputs/results/   per-class CSV, summary JSON, confusion matrix CSV
+outputs/models/    best model checkpoints (.pt)
+```
 
 ---
 
-## Citation
+## 🤝 Contributing
 
-If you use DynNav in your research, please cite:
+See [CONTRIBUTING.md](CONTRIBUTING.md) for setup instructions, code style rules, and how to add new models or loss functions.
+
+---
+
+## 📖 Citation
 
 ```bibtex
-@software{dynnav2025,
-  author    = {Grosdouli, Panagiota},
-  title     = {{DynNav}: Dynamic Navigation Rerouting in Unknown Environments},
-  year      = {2025},
-  publisher = {GitHub},
-  url       = {https://github.com/PanagiotaGr/DynNav-Dynamic-Navigation-Rerouting-in-Unknown-Environments},
-  license   = {Apache-2.0},
-  note      = {26 research modules: uncertainty-aware, risk-sensitive, learning-augmented navigation}
+@software{Grosdouli_Wafer_Fault_Detection_2026,
+  author  = {Grosdouli, Panagiota},
+  title   = {Semiconductor Wafer Defect Classification: A Study on Classical ML and Few-Shot Deep Learning},
+  url     = {https://github.com/PanagiotaGr/wafer-fault-detection-with-ml},
+  year    = {2026}
 }
 ```
 
 ---
 
-## Author
+## 🙏 Acknowledgments
 
-<table>
-<tr>
-<td align="center">
-<b>Panagiota Grosdouli</b><br/>
-Electrical & Computer Engineering<br/>
-Democritus University of Thrace<br/>
-</td>
-</tr>
-</table>
+- [WM-811K / LSWMD dataset](https://www.kaggle.com/qingyi/wm811k-wafer-map)
+- Semiconductor defect detection research community
 
 ---
 
-## License
+## 📄 License
 
-Copyright 2025 Panagiota Grosdouli
-
-Licensed under the **Apache License, Version 2.0** — see [LICENSE](LICENSE) for details.
-
----
-
-<div align="center">
-
-*Built with curiosity, tested with rigor, shared with the community.*
-
-⭐ **Star this repo** if you find it useful!
-
-</div>
+Distributed under the [Apache 2.0 License](LICENSE).
