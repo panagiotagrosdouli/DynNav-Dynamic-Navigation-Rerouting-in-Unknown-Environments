@@ -1,4 +1,4 @@
-````markdown
+
 # DynNav
 
 ## Dynamic Navigation & Rerouting in Unknown Environments
